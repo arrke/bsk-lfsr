@@ -2,6 +2,8 @@
 import random
 from tkinter import messagebox
 import tkinter as tk
+import bitarray
+
 
 def getIndexesToXor(array):
     result = []
@@ -10,18 +12,39 @@ def getIndexesToXor(array):
             result.append(idx)
     return result
 
-def lsfrCycle():
+def lsfr(version):
     mask = 0
     try:
         mask = int(textTF.get())
     except ValueError:
+        messagebox.showerror("MASKA", "Nie poprawna maska")
         return 0
-    cycleLimit = 2**len(str(mask)) - 1
+    cycleLimit = 0
+    blockLen = 0
+    if version is None:
+        cycleLimit = 2**len(str(mask)) - 1
+        blockLen = len(str(mask))
+    else:
+        cycleLimit = len(version)
+        blockLen = len(version)
     result = []
     block = []
     print(str(mask))
-    for element_in_mask in range(len(str(mask))):
-        block.append(random.randint(0, 1))
+    seed = 0
+    try:
+        seed = int(seedTF.get())
+        if len(str(seed)) != len(str(mask)):
+            messagebox.showerror("SEED", "seed nie ma tej samej dlugosci co maska")
+            return
+    except ValueError:
+        messagebox.showerror("SEED", "Seed niepoprawny")
+        return 0
+    if seed != 0:
+        block = [int(y) for y in list(str(seed))]
+    else:
+        for element_in_mask in range(blockLen):
+            block.append(random.randint(0, 1))
+    print(block)
     array = getIndexesToXor([int(y) for y in str(mask)])
     for i in range(cycleLimit):
         result.append(int(block[-1]))
@@ -44,15 +67,30 @@ def lsfrCycle():
     return result
 
 def lfsrFun():
-    if(sposob.get() == 0):
-        messagebox.showerror("Nie wybrano sposobu!")
-    elif(sposob.get() == 2):
-        result = lsfrCycle()
-        strResult = ''.join([str(elem) for elem in result])
-        messagebox.showinfo("Wynik", "Wygenerowany LFSR: {}".format(strResult))
+    result = lsfr(None)
+    if result == 0:
+        return
+    strResult = ''.join([str(elem) for elem in result])
+    messagebox.showinfo("Wynik", "Wygenerowany LFSR: {}".format(strResult))
+
+def ssc():
+    ba = bitarray.bitarray()
+    text = nameTF.get()
+    if text == '':
+        messagebox.showerror("BRAK NAZWY", "NIE PODANO NAZWY DO SZYFROWANIA")
+        return
+    ba.frombytes(text.encode('utf-8'))
+    textbytes = ba.tolist().copy()
+    resultlsfr = lsfr(ba)
+    if resultlsfr == 0:
+        return
+    result = []
+    for i in range(len(textbytes)):
+        result.append(resultlsfr[i] ^ textbytes[i])
+    strresult = str(bitarray.bitarray(result).tobytes())[3:-1]
+    messagebox.showinfo("Wynik", "Zaszyfrowany ciąg: {}".format(strresult))
 
 master = tk.Tk()
-sposob = tk.IntVar()
 
 header = tk.Label(master, text="GENERATORY LICZB PSEUDOLOSOWYCH. \n SZYFRY STRUMIENIOWE", font="Helvetica 16 bold italic").grid(row=0, columnspan=2)
 
@@ -61,13 +99,16 @@ textTF = tk.Entry(master, width=50)
 textTF.grid(row=1,column=1,columnspan=3)
 examplePolynomialsLabel = tk.Label(master, text="Przykład: Jeżeli chce się podać wielomian \n 𝜑(𝑥) = 1 + 𝑥 + 𝑥^4\n Podaj odpowiadające potegi: 11001", font="Helvetica 10 italic").grid(row=2,column=1, columnspan=3)
 emptyLabel = tk.Label(master).grid(row=3,columnspan=4,rowspan=3)
-sposobRadioLabel = tk.Label(master, text="Sposób działania generatora liczb pseudolosowych:").grid(row=5, column=0,rowspan=3)
-R1 = tk.Radiobutton (master, text="W nieskonczonosc, do momentu wcisniecia Spacji", variable=sposob, value=1)
-R1.grid(row=6,column=1, padx=0)
-R2 = tk.Radiobutton (master, text="Do wykrycia cyklu", variable=sposob, value=2)
-R2.grid(row=7,column=1, padx=0)
+
+seedLabel = tk.Label(master, text="Podaj seed poczatkowy").grid(row=4,column=0)
+seedTF = tk.Entry(master, width=50).grid(row=4, column=1)
+
+nameLabel = tk.Label(master, text="Podaj text do zaszyfrowania").grid(row=5, column=0)
+nameTF = tk.Entry(master, width=50)
+nameTF.grid(row=5, column=1)
 
 LFSRButton = tk.Button(master, text="GENERATOR LICZB PSEUDOLOSOWYCH", command=lfsrFun).grid(row=8,column=0)
+SSCButton = tk.Button(master, text="SZYFR STRUMIENIOWY", command=ssc).grid(row=8, column = 1)
 master.geometry("800x600")
 master.mainloop()
 
