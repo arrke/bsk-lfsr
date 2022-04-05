@@ -3,7 +3,9 @@ import random
 from tkinter import messagebox
 import tkinter as tk
 import bitarray
+from tkinter import filedialog as fd
 
+filename = 0
 
 def getIndexesToXor(array):
     result = []
@@ -91,7 +93,33 @@ def ssc():
     result = []
     for i in range(len(textbytes)):
         result.append(resultlsfr[i] ^ textbytes[i])
-    messagebox.showinfo("Wynik", "Zaszyfrowany ciąg: {}".format(bitarray.bitarray(result).tobytes().decode("ISO-8859-1")))
+    messagebox.showinfo("Wynik", "Zaszyfrowany ciąg: {}".format(bitarray.bitarray(result).tobytes().decode("utf-16")))
+
+def ssc_with_file():
+    global filename
+    ba = bitarray.bitarray()
+    if filename == 0:
+        messagebox.showerror("BRAK PLIKU", "NIE PODANO PLIKU DO SZYFROWANIA")
+        return
+    file = open(filename, 'rb')
+    data = file.read()
+    ba.frombytes(data)
+    textbytes = ba.tolist().copy()
+    resultlsfr = lsfr(ba)
+    if resultlsfr == 0:
+        return
+    result = []
+    for i in range(len(textbytes)):
+        result.append(resultlsfr[i] ^ textbytes[i])
+    messagebox.showinfo("Wynik",
+                        "Zaszyfrowany ciąg: {}".format(bitarray.bitarray(result).tobytes().decode("ISO-8859-1")))
+
+
+def addFile():
+    global filename
+    filename = fd.askopenfilename()
+    messagebox.showinfo(title="Dodano plik", message=filename)
+    fileNameLabel.config(text = filename)
 
 master = tk.Tk()
 
@@ -113,9 +141,14 @@ seedTF.grid(row=4, column=1)
 nameLabel = tk.Label(master, text="Podaj text do zaszyfrowania").grid(row=5, column=0)
 nameTF = tk.Entry(master, width=50)
 nameTF.grid(row=5, column=1)
-
+fileButton = tk.Button(master, text="Dodaj plik", command=addFile)
+fileButton.grid(row=6, column=0)
+fileNameLabel = tk.Label(master, text="")
+fileNameLabel.grid(row=6, column=1)
 LFSRButton = tk.Button(master, text="GENERATOR LICZB PSEUDOLOSOWYCH", command=lfsrFun).grid(row=8,column=0)
 SSCButton = tk.Button(master, text="SZYFR STRUMIENIOWY", command=ssc).grid(row=8, column = 1)
+SSCButton = tk.Button(master, text="SZYFR STRUMIENIOWY Z PLIKIEM", command=ssc_with_file).grid(row=8, column = 2)
+
 master.geometry("800x600")
 master.mainloop()
 
